@@ -5,7 +5,33 @@ type FailOptions = {
   detail?: string;
 };
 
+function reportConsumption(
+  res: Response,
+  message: string,
+  status: number,
+  detail?: string
+): void {
+  const req = res.req;
+  if (req?.method === "OPTIONS") return;
+
+  const route =
+    req?.method && req.originalUrl ? `${req.method} ${req.originalUrl}` : "solicitud";
+  const fields: Record<string, string> = {
+    estado: String(status),
+    ruta: route,
+  };
+  if (detail) fields.detalle = detail.slice(0, 700);
+
+  notifySlack({
+    title: "Consumo de endpoint",
+    level: status >= 500 ? "error" : status >= 400 ? "warn" : "info",
+    message: `${route} · ${message}`,
+    fields,
+  });
+}
+
 export function ok(res: Response, data: unknown, message = "OK", status = 200) {
+  reportConsumption(res, message, status);
   return res.status(status).json({
     success: true,
     message,
@@ -41,27 +67,11 @@ export function fail(
   errors: unknown = null,
   options?: FailOptions
 ) {
-  const fields: Record<string, string> = {
-    estado: String(status),
-  };
-  const req = res.req;
-  if (req?.method && req.originalUrl) {
-    fields.ruta = `${req.method} ${req.originalUrl}`;
-  }
-
   const parts = [options?.detail, summarizeErrors(errors)].filter(
     (part): part is string => Boolean(part)
   );
-  if (parts.length > 0) {
-    fields.detalle = parts.join(" | ").slice(0, 700);
-  }
-
-  notifySlack({
-    title: status >= 500 ? "Error de API" : "Alerta de API",
-    level: status >= 500 ? "error" : "warn",
-    message,
-    fields,
-  });
+  if (parts.length > 0) reportConsumption(res, message, status, parts.join(" | "));
+  else reportConsumption(res, message, status);
 
   return res.status(status).json({
     success: false,

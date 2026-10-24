@@ -23,6 +23,9 @@ const LABELS: Record<string, string> = {
   señal: "señal",
   puerto: "puerto",
   tipo: "tipo",
+  gestor: "gestor",
+  proceso: "proceso",
+  pm_id: "pm_id",
 };
 
 const METADATA_BASE = "http://169.254.169.254/latest";
@@ -100,11 +103,24 @@ export async function loadAwsIdentity(): Promise<void> {
   }
 }
 
+export function isUnderPm2(): boolean {
+  return process.env.pm_id !== undefined || Boolean(process.env.PM2_HOME);
+}
+
+function assignPm2(fields: Record<string, string>): void {
+  if (!isUnderPm2()) return;
+  fields.gestor = "PM2";
+  const name = process.env.name?.trim();
+  if (name) fields.proceso = name;
+  if (process.env.pm_id !== undefined) fields.pm_id = String(process.env.pm_id);
+}
+
 export function runtimeFields(): Record<string, string> {
   const fields: Record<string, string> = {
     pid: String(process.pid),
     host: os.hostname(),
   };
+  assignPm2(fields);
 
   if (aws) {
     fields.entorno = "AWS EC2";

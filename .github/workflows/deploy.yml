@@ -12,14 +12,20 @@ jobs:
     steps:
       - name: Update and restart the API
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: SLACK_WEBHOOK_URL
           script_stop: true
           script: |
             cd /opt/msoft-pda/msoft-pda-backend
             git pull origin main
             npm install
+            if [ -n "$SLACK_WEBHOOK_URL" ]; then
+              node --input-type=module -e 'import fs from "node:fs"; const url = process.env.SLACK_WEBHOOK_URL.trim(); const path = ".env"; const lines = fs.existsSync(path) ? fs.readFileSync(path, "utf8").split(/\r?\n/) : []; const out = []; let found = false; for (const line of lines) { if (line.startsWith("SLACK_WEBHOOK_URL=")) { out.push("SLACK_WEBHOOK_URL=" + url); found = true; } else if (line.length) out.push(line); } if (!found) out.push("SLACK_WEBHOOK_URL=" + url); fs.writeFileSync(path, out.join("\n") + "\n");'
+            fi
             sudo systemctl restart msoft-pda-api
             systemctl is-active msoft-pda-api

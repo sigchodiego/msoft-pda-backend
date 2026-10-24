@@ -44,6 +44,30 @@ describe("alertas de Slack", () => {
     expect(text).not.toContain("Azure");
   });
 
+  it("marca el proceso cuando corre bajo PM2", () => {
+    const previousId = process.env.pm_id;
+    const previousName = process.env.name;
+    process.env.pm_id = "0";
+    process.env.name = "msoft-pda-api";
+
+    try {
+      const text = formatSlackText({
+        title: "API detenida por PM2",
+        level: "error",
+        message: "PM2 envió SIGINT para detener el proceso",
+      });
+
+      expect(text).toContain("gestor: PM2");
+      expect(text).toContain("proceso: msoft-pda-api");
+      expect(text).toContain("pm_id: 0");
+    } finally {
+      if (previousId === undefined) delete process.env.pm_id;
+      else process.env.pm_id = previousId;
+      if (previousName === undefined) delete process.env.name;
+      else process.env.name = previousName;
+    }
+  });
+
   it("fuera de EC2 usa el host local", () => {
     const text = formatSlackText({
       title: "Instancia arriba",
