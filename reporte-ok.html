@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Artillery — Recursos Altos (OK)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0e1512; --panel: #16201b; --line: #274035; --text: #e8f5ee;
+      --muted: #8aa899; --ok: #3dbe7a; --ok-dim: #1a3326;
+      --accent: #4ec9a0; --blue: #5b9fd4; --warn: #e6a23c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: radial-gradient(1100px 520px at 90% -8%, #1a3326 0%, transparent 55%), var(--bg);
+      color: var(--text); min-height: 100vh;
+    }
+    header { padding: 28px 32px 16px; border-bottom: 1px solid var(--line); }
+    .badge {
+      display: inline-block; background: var(--ok-dim); color: var(--ok);
+      border: 1px solid var(--ok); padding: 4px 12px; border-radius: 999px;
+      font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    }
+    h1 { margin: 12px 0 6px; font-size: 28px; }
+    h2 { margin: 0 0 10px; font-size: 16px; }
+    .sub { color: var(--muted); font-size: 14px; line-height: 1.5; }
+    main {
+      padding: 24px 32px 48px; display: grid; gap: 18px;
+      grid-template-columns: repeat(12, 1fr); max-width: 1320px; margin: 0 auto;
+    }
+    .card {
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 14px; padding: 18px;
+    }
+    .kpi { grid-column: span 3; }
+    .third { grid-column: span 4; }
+    .wide { grid-column: span 6; }
+    .full { grid-column: span 12; }
+    .kpi .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+    .kpi .value { font-size: 30px; font-weight: 750; margin-top: 8px; }
+    .kpi .hint { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.4; }
+    .ok { color: var(--ok); } .warn { color: var(--warn); }
+    .chart-wrap { height: 280px; position: relative; }
+    .chart-sm { height: 240px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; }
+    .sla {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--ok-dim); color: var(--ok); border: 1px solid var(--ok);
+      border-radius: 8px; padding: 8px 12px; font-weight: 600; margin: 4px 8px 4px 0;
+    }
+    .note {
+      background: #121c17; border-left: 3px solid var(--ok);
+      padding: 12px 14px; border-radius: 0 8px 8px 0; color: var(--muted);
+      font-size: 13px; line-height: 1.55; margin-top: 12px;
+    }
+    .note strong { color: var(--text); }
+    ul.clean { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+    ul.clean li strong { color: var(--text); }
+    code { color: var(--accent); }
+    @media (max-width: 980px) {
+      .kpi, .third, .wide, .full { grid-column: span 12; }
+      main { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="badge">SLA cumplido · Recursos altos</span>
+    <h1>Dashboard Artillery — Escenario exitoso</h1>
+    <p class="sub">
+      Run <code>t4jz7_znxdxp68ph3f66yh5tb38admyzhzz_7r7k</code> ·
+      13:15:10 → 13:16:03 (-0500) · Duración total <strong>52 s</strong> ·
+      Fuente: <code>respuesta-ok.txt</code>
+    </p>
+  </header>
+
+  <main>
+    <section class="card full">
+      <h2>Contexto de la prueba</h2>
+      <div class="sub">
+        Misma API (<code>http://localhost:3001</code>) con Mongo Docker en perfil alto.
+        Escenario mixto: POST válido (201) + POST inválido Zod (400), con pausa de pensamiento.
+        Ambos checks del plugin <code>ensure</code> quedaron en <strong>ok</strong>.
+      </div>
+      <ul class="clean">
+        <li><strong>Fase 1 Calentamiento:</strong> 20 s · arrivalRate 5/s</li>
+        <li><strong>Fase 2 Saturación:</strong> 30 s · 15/s → rampTo 50/s</li>
+        <li><strong>SLA:</strong> maxErrorRate &lt; 1% y p99 &lt; 200 ms</li>
+        <li><strong>Escenario:</strong> Inundación transaccional perimetral (payloads mixtos Zod) · 1,075 VUs</li>
+      </ul>
+    </section>
+
+    <section class="card kpi">
+      <div class="label">Requests</div>
+      <div class="value">2,150</div>
+      <div class="hint">Rate medio 61/s · 2,150 respuestas (100%)</div>
+    </section>
+    <section class="card kpi">
+      <div class="label">VUs creados / fallidos</div>
+      <div class="value"><span class="ok">0</span> / 1,075</div>
+      <div class="hint">Error rate = <strong class="ok">0%</strong></div>
+    </section>
+    <section class="card kpi">
+      <div class="label">p99 global</div>
+      <div class="value ok">10.9 ms</div>
+      <div class="hint">SLA 200 ms · mean 2.7 · median 2</div>
+    </section>
+    <section class="card kpi">
+      <div class="label">Timeouts / errores</div>
+      <div class="value ok">0</div>
+      <div class="hint">Sin ETIMEDOUT, ECONNRESET ni ECONNREFUSED</div>
+    </section>
+
+    <section class="card wide">
+      <h2>Checks SLA</h2>
+      <div class="sla">ok: maxErrorRate &lt; 1</div>
+      <div class="sla">ok: http.response_time.p99 &lt; 200</div>
+      <div class="note">
+        <strong>Por qué pasa:</strong> los 1,075 VUs completaron el flow. No hubo errores de socket.
+        El p99 (10.9 ms) está ~18× por debajo del umbral de 200 ms. El sistema respondió de forma
+        estable durante calentamiento y pico.
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>Lectura rápida 2xx vs 4xx</h2>
+      <table>
+        <thead><tr><th>Grupo</th><th>mean</th><th>p95</th><th>p99</th><th>Interpretación</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>2xx (Mongo)</td>
+            <td class="ok">3.9 ms</td><td class="ok">7</td><td class="ok">13.1</td>
+            <td>Escrituras holgadas</td>
+          </tr>
+          <tr>
+            <td>4xx (Zod)</td>
+            <td class="ok">1.5 ms</td><td class="ok">3</td><td class="ok">6</td>
+            <td>Rechazo perimetral inmediato</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note">
+        <strong>Diseño del escenario:</strong> mitad 201 / mitad 400 (1,075 c/u). Demuestra tubería completa
+        y validación Zod sin degradar la latencia.
+      </div>
+    </section>
+
+    <section class="card third">
+      <h2>Códigos HTTP</h2>
+      <div class="chart-wrap chart-sm"><canvas id="codesChart"></canvas></div>
+      <p class="sub" style="margin-top:10px">Balance exacto 201/400 · sin errores</p>
+    </section>
+    <section class="card third">
+      <h2>VUs</h2>
+      <div class="chart-wrap chart-sm"><canvas id="vuChart"></canvas></div>
+      <p class="sub" style="margin-top:10px">1,075 completados · 0 fallidos</p>
+    </section>
+    <section class="card third">
+      <h2>Request rate por periodo</h2>
+      <div class="chart-wrap chart-sm"><canvas id="rateChart"></canvas></div>
+      <p class="sub" style="margin-top:10px">Sube en el pico (hasta ~90/s) sin romper el SLA</p>
+    </section>
+
+    <section class="card wide">
+      <h2>Latencia por periodo (p95 / p99)</h2>
+      <div class="chart-wrap"><canvas id="latencyChart"></canvas></div>
+      <p class="sub" style="margin-top:10px">Casi todo el test está lejos del SLA 200 ms. Hubo un pico puntual de p99 ≈ 62 ms (13:15:40), aún válido.</p>
+    </section>
+    <section class="card wide">
+      <h2>Throughput 201 vs 400</h2>
+      <div class="chart-wrap"><canvas id="codesBar"></canvas></div>
+      <p class="sub" style="margin-top:10px">Ambos flujos avanzan juntos: validación Zod y persistencia Mongo en paralelo por VU.</p>
+    </section>
+
+    <section class="card full">
+      <h2>Detalle por periodo</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Periodo</th><th>Fase</th><th>Req/s</th><th>201</th><th>400</th>
+            <th>VUs fail</th><th>mean</th><th>p95</th><th>p99</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>13:15:20</td><td>Calentamiento</td><td>10</td><td>45</td><td>40</td><td class="ok">0</td><td>4.3</td><td>13.1</td><td>30.9</td></tr>
+          <tr><td>13:15:30</td><td>Calentamiento</td><td>10</td><td>50</td><td>50</td><td class="ok">0</td><td>2.5</td><td>5</td><td>7.9</td></tr>
+          <tr><td>13:15:40</td><td>Saturación</td><td>42</td><td>188</td><td>168</td><td class="ok">0</td><td>3.7</td><td>6</td><td class="warn">62.2</td></tr>
+          <tr><td>13:15:50</td><td>Saturación</td><td>65</td><td>319</td><td>307</td><td class="ok">0</td><td>2.4</td><td>5</td><td>7</td></tr>
+          <tr><td>13:16:00</td><td>Saturación</td><td>90</td><td>440</td><td>427</td><td class="ok">0</td><td>2.5</td><td>6</td><td>7.9</td></tr>
+          <tr><td>13:16:10</td><td>Cierre</td><td>80</td><td>33</td><td>83</td><td class="ok">0</td><td>2.4</td><td>7</td><td>10.1</td></tr>
+        </tbody>
+      </table>
+      <div class="note">
+        <strong>Narrativa estable:</strong> en ningún periodo hay VUs fallidos. La latencia se mantiene
+        en milisegundos de un dígito / dos dígitos bajos. El sistema absorbe el ramp-up hasta 50 arrival/s
+        sin degradación relevante.
+      </div>
+    </section>
+
+    <section class="card full">
+      <h2>Summary completo</h2>
+      <table>
+        <thead><tr><th>Métrica</th><th>Valor</th><th>Qué significa</th></tr></thead>
+        <tbody>
+          <tr><td>http.requests</td><td>2,150</td><td>Peticiones enviadas</td></tr>
+          <tr><td>http.responses</td><td class="ok">2,150</td><td>Todas obtuvieron respuesta HTTP</td></tr>
+          <tr><td>http.codes.201</td><td>1,075</td><td>POST válidos persistidos</td></tr>
+          <tr><td>http.codes.400</td><td>1,075</td><td>POST inválidos cortados por Zod</td></tr>
+          <tr><td>errors.*</td><td class="ok">0</td><td>Sin fallos de red/timeout</td></tr>
+          <tr><td>vusers.created / completed / failed</td><td class="ok">1,075 / 1,075 / 0</td><td>100% éxito de sesiones</td></tr>
+          <tr><td>response_time min/max</td><td>0 / 99 ms</td><td>Rango global controlado</td></tr>
+          <tr><td>response_time mean / median</td><td>2.7 / 2 ms</td><td>Muy estable</td></tr>
+          <tr><td>response_time p95 / p99</td><td class="ok">6 / 10.9 ms</td><td>Cumple SLA con holgura</td></tr>
+          <tr><td>session_length mean</td><td>1,010.3 ms</td><td>Dominado por <code>think: 1</code> (~1 s)</td></tr>
+          <tr><td>downloaded_bytes</td><td>765,400</td><td>~0.73 MB</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    const C = { ok:"#3dbe7a", accent:"#4ec9a0", blue:"#5b9fd4", warn:"#e6a23c", muted:"#8aa899", line:"#274035" };
+    const legend = { labels: { color: "#e8f5ee" } };
+    const scales = {
+      x: { ticks: { color: C.muted }, grid: { color: C.line } },
+      y: { ticks: { color: C.muted }, grid: { color: C.line } }
+    };
+    const periods = ["13:15:20","13:15:30","13:15:40","13:15:50","13:16:00","13:16:10"];
+
+    new Chart(document.getElementById("codesChart"), {
+      type: "doughnut",
+      data: {
+        labels: ["201", "400", "Errores"],
+        datasets: [{ data: [1075, 1075, 0.0001], backgroundColor: [C.blue, C.warn, C.line], borderWidth: 0 }]
+      },
+      options: { plugins: { legend }, maintainAspectRatio: false }
+    });
+
+    new Chart(document.getElementById("vuChart"), {
+      type: "doughnut",
+      data: {
+        labels: ["Completados", "Fallidos"],
+        datasets: [{ data: [1075, 0.0001], backgroundColor: [C.ok, C.line], borderWidth: 0 }]
+      },
+      options: { plugins: { legend }, maintainAspectRatio: false }
+    });
+
+    new Chart(document.getElementById("rateChart"), {
+      type: "bar",
+      data: {
+        labels: periods,
+        datasets: [{ label: "Req/s", data: [10,10,42,65,90,80], backgroundColor: C.accent }]
+      },
+      options: { maintainAspectRatio: false, plugins: { legend }, scales }
+    });
+
+    new Chart(document.getElementById("latencyChart"), {
+      type: "line",
+      data: {
+        labels: periods,
+        datasets: [
+          { label: "p95", data: [13.1,5,6,5,6,7], borderColor: C.accent, tension: .25, backgroundColor: "transparent" },
+          { label: "p99", data: [30.9,7.9,62.2,7,7.9,10.1], borderColor: C.blue, tension: .25, backgroundColor: "transparent" },
+          { label: "SLA 200", data: [200,200,200,200,200,200], borderColor: C.muted, borderDash: [6,6], pointRadius: 0, tension: 0, backgroundColor: "transparent" }
+        ]
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: { legend },
+        scales: { x: scales.x, y: { ...scales.y, suggestedMax: 220 } }
+      }
+    });
+
+    new Chart(document.getElementById("codesBar"), {
+      type: "bar",
+      data: {
+        labels: periods,
+        datasets: [
+          { label: "201", data: [45,50,188,319,440,33], backgroundColor: C.blue },
+          { label: "400", data: [40,50,168,307,427,83], backgroundColor: C.warn }
+        ]
+      },
+      options: { maintainAspectRatio: false, plugins: { legend }, scales }
+    });
+  </script>
+</body>
+</html>

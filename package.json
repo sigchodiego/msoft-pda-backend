@@ -1,0 +1,46 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:unit": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "dev": "tsx watch src/index.ts",
+    "mongo:up": "docker compose up -d && npm run mongo:wait",
+    "mongo:low": "docker update --cpus=0.10 --memory=384m --memory-swap=384m msoft-pda-mongo && docker stats msoft-pda-mongo --no-stream",
+    "mongo:high": "docker update --cpus=2.0 --memory=1536m --memory-swap=1536m msoft-pda-mongo && docker stats msoft-pda-mongo --no-stream",
+    "mongo:wait": "sh -c 'i=0; until [ \"$(docker inspect -f '{{.State.Health.Status}}' msoft-pda-mongo 2>/dev/null)\" = \"healthy\" ]; do i=$((i+1)); if [ \"$i\" -gt 60 ]; then echo Mongo no healthy; exit 1; fi; echo Esperando Mongo healthy...; sleep 2; done; echo Mongo healthy'",
+    "api:ready": "sh -c 'i=0; until curl -sf -m 3 http://127.0.0.1:3001/api/empleados >/dev/null; do i=$((i+1)); if [ \"$i\" -gt 40 ]; then echo API no lista; exit 1; fi; echo Esperando API...; sleep 1; done; echo API lista'",
+    "mongo:down": "docker compose down",
+    "mongo:stats": "docker stats msoft-pda-mongo --no-stream",
+    "stress": "npm run api:ready && artillery run stress-test.yml"
+  },
+  "keywords": [],
+  "type": "module",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.10.1",
+    "morgan": "^1.12.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^26.6.1",
+    "jest": "^30.5.2",
+    "nodemon": "^3.1.14",
+    "ts-jest": "^29.4.15",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.23.13",
+    "typescript": "^5.8.3"
+  }
+}

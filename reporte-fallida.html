@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Artillery — Recursos Bajos (FALLIDA)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1419; --panel: #1a222d; --line: #2c3848; --text: #e8eef4;
+      --muted: #8b9bb0; --fail: #e85d4c; --fail-dim: #3a1f1c;
+      --warn: #e6a23c; --ok: #3dbe7a; --accent: #5b9fd4;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: radial-gradient(1100px 520px at 8% -8%, #3a1f1c 0%, transparent 55%), var(--bg);
+      color: var(--text); min-height: 100vh;
+    }
+    header { padding: 28px 32px 16px; border-bottom: 1px solid var(--line); }
+    .badge {
+      display: inline-block; background: var(--fail-dim); color: var(--fail);
+      border: 1px solid var(--fail); padding: 4px 12px; border-radius: 999px;
+      font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    }
+    h1 { margin: 12px 0 6px; font-size: 28px; }
+    h2 { margin: 0 0 10px; font-size: 16px; }
+    h3 { margin: 0 0 8px; font-size: 14px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+    .sub { color: var(--muted); font-size: 14px; line-height: 1.5; }
+    main {
+      padding: 24px 32px 48px; display: grid; gap: 18px;
+      grid-template-columns: repeat(12, 1fr); max-width: 1320px; margin: 0 auto;
+    }
+    .card {
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 14px; padding: 18px;
+    }
+    .kpi { grid-column: span 3; }
+    .third { grid-column: span 4; }
+    .wide { grid-column: span 6; }
+    .full { grid-column: span 12; }
+    .kpi .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+    .kpi .value { font-size: 30px; font-weight: 750; margin-top: 8px; }
+    .kpi .hint { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.4; }
+    .fail { color: var(--fail); } .warn { color: var(--warn); } .ok { color: var(--ok); }
+    .chart-wrap { height: 280px; position: relative; }
+    .chart-sm { height: 240px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; }
+    .sla {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--fail-dim); color: var(--fail); border: 1px solid var(--fail);
+      border-radius: 8px; padding: 8px 12px; font-weight: 600; margin: 4px 8px 4px 0;
+    }
+    .note {
+      background: #141b24; border-left: 3px solid var(--fail);
+      padding: 12px 14px; border-radius: 0 8px 8px 0; color: var(--muted);
+      font-size: 13px; line-height: 1.55; margin-top: 12px;
+    }
+    .note strong { color: var(--text); }
+    ul.clean { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+    ul.clean li strong { color: var(--text); }
+    code { color: var(--accent); }
+    @media (max-width: 980px) {
+      .kpi, .third, .wide, .full { grid-column: span 12; }
+      main { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="badge">SLA no cumplido · Recursos bajos</span>
+    <h1>Dashboard Artillery — Escenario fallido</h1>
+    <p class="sub">
+      Run <code>tjmhw_bcchm5c5jwegaggfbxqy5p6ygry3t_5khn</code> ·
+      13:24:31 → 13:25:30 (-0500) · Duración total <strong>58 s</strong> ·
+      Fuente: <code>respuesta-fallida.txt</code>
+    </p>
+  </header>
+
+  <main>
+    <section class="card full">
+      <h2>Contexto de la prueba</h2>
+      <div class="sub">
+        Prueba de estrés concurrente (Fase B) contra <code>http://localhost:3001</code> con Mongo Docker limitado
+        (<strong>(≈ 0.10 CPU / 384 MB)</strong>. El YAML usa timeout corto (<strong>1.5 s</strong>), pico hasta
+        <strong>150 usuarios/s</strong> y escenario “Martillo Mongo” (10 POST válidos por VU) para saturar la DB.
+      </div>
+      <ul class="clean">
+        <li><strong>Fase 1 Calentamiento:</strong> 15 s · arrivalRate 25/s</li>
+        <li><strong>Fase 2 Saturación:</strong> 40 s · 50/s → rampTo 150/s</li>
+        <li><strong>SLA:</strong> maxErrorRate &lt; 1% y p99 &lt; 200 ms</li>
+        <li><strong>Escenarios:</strong> Martillo Mongo (2,592 VUs) + Payloads mixtos Zod (1,783 VUs)</li>
+      </ul>
+    </section>
+
+    <section class="card kpi">
+      <div class="label">Requests</div>
+      <div class="value">14,487</div>
+      <div class="hint">Rate medio 258/s · 11,844 respuestas HTTP</div>
+    </section>
+    <section class="card kpi">
+      <div class="label">VUs creados / fallidos</div>
+      <div class="value"><span class="fail">2,643</span> / 4,375</div>
+      <div class="hint">Error rate ≈ <strong class="fail">60.4%</strong> (umbral 1%)</div>
+    </section>
+    <section class="card kpi">
+      <div class="label">p99 global</div>
+      <div class="value warn">1,495.5 ms</div>
+      <div class="hint">SLA 200 ms · mean 655.6 · median 645.6</div>
+    </section>
+    <section class="card kpi">
+      <div class="label">Timeouts</div>
+      <div class="value fail">2,643</div>
+      <div class="hint">errors.ETIMEDOUT (misma cifra que VUs fallidos)</div>
+    </section>
+
+    <section class="card wide">
+      <h2>Checks SLA</h2>
+      <div class="sla">fail: maxErrorRate &lt; 1</div>
+      <div class="note">
+        <strong>Por qué falla:</strong> de 4,375 usuarios virtuales, 2,643 no terminaron su flujo
+        (timeout al esperar respuesta). Eso es ~60% de error, frente al máximo permitido del 1%.
+        El p99 (1,495.5 ms) también supera por mucho los 200 ms; el plugin solo imprimió el fail de
+        <code>maxErrorRate</code> en este log, pero la latencia queda evidenciada en el summary.
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>Lectura rápida 2xx vs 4xx</h2>
+      <table>
+        <thead><tr><th>Grupo</th><th>mean</th><th>p95</th><th>p99</th><th>Interpretación</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>2xx (Mongo)</td>
+            <td>734.7 ms</td><td class="fail">1,465.9</td><td class="fail">1,495.5</td>
+            <td>Escrituras válidas se ahogan</td>
+          </tr>
+          <tr>
+            <td>4xx (Zod)</td>
+            <td class="ok">8.6 ms</td><td class="ok">18</td><td class="ok">22.9</td>
+            <td>Rechazo perimetral sigue rápido</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note">
+        <strong>Conclusión técnica:</strong> Zod no es el cuello de botella. La saturación está en el camino
+        que escribe en Mongo (201 / 2xx).
+      </div>
+    </section>
+
+    <section class="card third">
+      <h2>Códigos y errores</h2>
+      <div class="chart-wrap chart-sm"><canvas id="codesChart"></canvas></div>
+      <p class="sub" style="margin-top:10px">201 = guardado OK · 400 = Zod · ETIMEDOUT = sin respuesta a tiempo</p>
+    </section>
+    <section class="card third">
+      <h2>VUs</h2>
+      <div class="chart-wrap chart-sm"><canvas id="vuChart"></canvas></div>
+      <p class="sub" style="margin-top:10px">Completados 1,732 · Fallidos 2,643</p>
+    </section>
+    <section class="card third">
+      <h2>Escenarios</h2>
+      <div class="chart-wrap chart-sm"><canvas id="scenarioChart"></canvas></div>
+      <p class="sub" style="margin-top:10px">Más peso en Martillo Mongo (escrituras repetidas)</p>
+    </section>
+
+    <section class="card wide">
+      <h2>Latencia por periodo (p95 / p99)</h2>
+      <div class="chart-wrap"><canvas id="latencyChart"></canvas></div>
+      <p class="sub" style="margin-top:10px">La línea punteada es el SLA de 200 ms. En saturación, p99 se pega al tope del timeout (~1.5 s).</p>
+    </section>
+    <section class="card wide">
+      <h2>Carga y fallos por periodo</h2>
+      <div class="chart-wrap"><canvas id="loadChart"></canvas></div>
+      <p class="sub" style="margin-top:10px">Al subir el request rate en el pico, crecen fuerte los ETIMEDOUT / VUs fallidos.</p>
+    </section>
+
+    <section class="card full">
+      <h2>Detalle por periodo</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Periodo</th><th>Fase</th><th>Req/s</th><th>201</th><th>400</th>
+            <th>Timeouts</th><th>VUs fail</th><th>p95</th><th>p99</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>13:24:40</td><td>Calentamiento</td><td>171</td><td>1,205</td><td>78</td><td>0</td><td>0</td><td>487.9</td><td>788.5</td></tr>
+          <tr><td>13:24:50</td><td>Saturación</td><td>187</td><td>1,648</td><td>118</td><td>3</td><td>3</td><td>399.5</td><td>772.9</td></tr>
+          <tr><td>13:25:00</td><td>Saturación</td><td>346</td><td>2,914</td><td>241</td><td class="fail">12</td><td>12</td><td class="warn">1,107.9</td><td class="fail">1,300.1</td></tr>
+          <tr><td>13:25:10</td><td>Saturación</td><td>270</td><td>1,736</td><td>250</td><td class="fail">762</td><td class="fail">762</td><td class="fail">1,465.9</td><td class="fail">1,495.5</td></tr>
+          <tr><td>13:25:20</td><td>Saturación</td><td>309</td><td>1,868</td><td>377</td><td class="fail">648</td><td class="fail">648</td><td class="fail">1,495.5</td><td class="fail">1,495.5</td></tr>
+          <tr><td>13:25:30</td><td>Cierre pico</td><td>263</td><td>1,183</td><td>226</td><td class="fail">1,218</td><td class="fail">1,218</td><td class="fail">1,495.5</td><td class="fail">1,495.5</td></tr>
+        </tbody>
+      </table>
+      <div class="note">
+        <strong>Narrativa del colapso:</strong> el calentamiento ya muestra p99 alto (788 ms).
+        En saturación, a partir de 13:25:10 los timeouts explotan (762 → 648 → 1,218) y la latencia
+        se estabiliza cerca del timeout de Artillery (1.5 s): el sistema ya no alcanza a responder a tiempo.
+      </div>
+    </section>
+
+    <section class="card full">
+      <h2>Summary completo</h2>
+      <table>
+        <thead><tr><th>Métrica</th><th>Valor</th><th>Qué significa</th></tr></thead>
+        <tbody>
+          <tr><td>http.requests</td><td>14,487</td><td>Peticiones enviadas</td></tr>
+          <tr><td>http.responses</td><td>11,844</td><td>Respuestas HTTP recibidas (el resto timeout)</td></tr>
+          <tr><td>http.codes.201</td><td>10,554</td><td>Empleados creados OK</td></tr>
+          <tr><td>http.codes.400</td><td>1,290</td><td>Payload inválido rechazado por Zod</td></tr>
+          <tr><td>errors.ETIMEDOUT</td><td class="fail">2,643</td><td>Sin respuesta dentro del timeout</td></tr>
+          <tr><td>vusers.created</td><td>4,375</td><td>Usuarios virtuales totales</td></tr>
+          <tr><td>vusers.completed</td><td>1,732</td><td>Terminaron su flow completo</td></tr>
+          <tr><td>vusers.failed</td><td class="fail">2,643</td><td>No completaron (timeouts)</td></tr>
+          <tr><td>response_time min/max</td><td>0 / 1,504 ms</td><td>Rango global</td></tr>
+          <tr><td>session_length p99</td><td>8,186.6 ms</td><td>Duración de sesión de los peores VUs</td></tr>
+          <tr><td>downloaded_bytes</td><td>3,299,328</td><td>~3.15 MB descargados</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    const C = { fail:"#e85d4c", ok:"#3dbe7a", warn:"#e6a23c", accent:"#5b9fd4", muted:"#8b9bb0" };
+    const legend = { labels: { color: "#e8eef4" } };
+    const scales = {
+      x: { ticks: { color: C.muted }, grid: { color: "#2c3848" } },
+      y: { ticks: { color: C.muted }, grid: { color: "#2c3848" } }
+    };
+
+    new Chart(document.getElementById("codesChart"), {
+      type: "doughnut",
+      data: {
+        labels: ["201", "400", "ETIMEDOUT"],
+        datasets: [{ data: [10554, 1290, 2643], backgroundColor: [C.accent, C.warn, C.fail], borderWidth: 0 }]
+      },
+      options: { plugins: { legend }, maintainAspectRatio: false }
+    });
+
+    new Chart(document.getElementById("vuChart"), {
+      type: "doughnut",
+      data: {
+        labels: ["Completados", "Fallidos"],
+        datasets: [{ data: [1732, 2643], backgroundColor: [C.ok, C.fail], borderWidth: 0 }]
+      },
+      options: { plugins: { legend }, maintainAspectRatio: false }
+    });
+
+    new Chart(document.getElementById("scenarioChart"), {
+      type: "doughnut",
+      data: {
+        labels: ["Martillo Mongo", "Mixtos Zod"],
+        datasets: [{ data: [2592, 1783], backgroundColor: [C.warn, C.accent], borderWidth: 0 }]
+      },
+      options: { plugins: { legend }, maintainAspectRatio: false }
+    });
+
+    const periods = ["13:24:40","13:24:50","13:25:00","13:25:10","13:25:20","13:25:30"];
+
+    new Chart(document.getElementById("latencyChart"), {
+      type: "line",
+      data: {
+        labels: periods,
+        datasets: [
+          { label: "p95", data: [487.9,399.5,1107.9,1465.9,1495.5,1495.5], borderColor: C.warn, tension: .25, backgroundColor: "transparent" },
+          { label: "p99", data: [788.5,772.9,1300.1,1495.5,1495.5,1495.5], borderColor: C.fail, tension: .25, backgroundColor: "transparent" },
+          { label: "SLA 200", data: [200,200,200,200,200,200], borderColor: C.muted, borderDash: [6,6], pointRadius: 0, tension: 0, backgroundColor: "transparent" }
+        ]
+      },
+      options: { maintainAspectRatio: false, scales, plugins: { legend } }
+    });
+
+    new Chart(document.getElementById("loadChart"), {
+      type: "bar",
+      data: {
+        labels: periods,
+        datasets: [
+          { type: "line", label: "Req/s", data: [171,187,346,270,309,263], borderColor: C.accent, tension: .25, yAxisID: "y1" },
+          { label: "ETIMEDOUT", data: [0,3,12,762,648,1218], backgroundColor: C.fail }
+        ]
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: { legend },
+        scales: {
+          x: scales.x,
+          y: { ...scales.y, title: { display: true, text: "Timeouts", color: C.muted } },
+          y1: {
+            position: "right",
+            ticks: { color: C.muted },
+            grid: { drawOnChartArea: false },
+            title: { display: true, text: "Req/s", color: C.muted }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
