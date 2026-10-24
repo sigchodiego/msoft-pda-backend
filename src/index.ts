@@ -1,4 +1,8 @@
 import "./config/load-env.js";
+import {
+  attachHttpServer,
+  notifyInstanceUp,
+} from "./notifications/processAlerts.js";
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
@@ -10,6 +14,7 @@ import { MongooseAuthRepository } from "./repositories/MongooseAuthRepository.js
 import { createAuthController } from "./controllers/auth.controllers.js";
 import { createAuthRouter } from "./routes/auth.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { loadAwsIdentity } from "./notifications/slack.js";
 
 const app = express();
 const port = Number(process.env.PORT) || 3001;
@@ -37,17 +42,21 @@ app.use("/api", empleadosRouter);
 app.use(errorHandler);
 
 async function bootstrap() {
+  await loadAwsIdentity();
   await connectDatabase();
 
   const server = app.listen(port, () => {
+    const ready = isDatabaseReady();
     console.log("Servidor escuchando en el puerto " + port);
     console.log(
-      isDatabaseReady()
+      ready
         ? "✅ [Database]: lista para tráfico"
         : "⚠️ [Database]: aún reconectando"
     );
+    notifyInstanceUp(port, ready);
   });
 
+  attachHttpServer(server);
   server.keepAliveTimeout = 65000;
   server.headersTimeout = 66000;
 }

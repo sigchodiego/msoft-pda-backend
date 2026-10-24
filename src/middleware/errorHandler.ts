@@ -13,5 +13,6 @@ export function errorHandler(
   }
 
   console.error(err);
-  return fail(res, "Error interno del servidor", 500);
+  const detail = err instanceof Error ? err.message : "Error no identificado";
+  return fail(res, "Error interno del servidor", 500, null, { detail });
 }

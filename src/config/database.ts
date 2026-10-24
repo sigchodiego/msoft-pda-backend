@@ -1,5 +1,6 @@
 import "./load-env.js";
 import mongoose from "mongoose";
+import { notifySlack } from "../notifications/slack.js";
 
 const DB_NAME = "usuarios_db";
 
@@ -51,21 +52,41 @@ function bindConnectionListeners(): void {
 
   mongoose.connection.on("connected", () => {
     console.log("🔄 [Database]: Conexión exitosa a MongoDB");
+    notifySlack({
+      title: "MongoDB conectado",
+      level: "info",
+      message: "La base de datos aceptó la conexión",
+    });
   });
 
   mongoose.connection.on("reconnected", () => {
     console.log("🔄 [Database]: Reconectado a MongoDB");
+    notifySlack({
+      title: "MongoDB reconectado",
+      level: "info",
+      message: "La base de datos volvió a estar disponible",
+    });
   });
 
   mongoose.connection.on("disconnected", () => {
     console.warn(
       "⚠️ [Database]: MongoDB desconectado (el API sigue vivo; reintentando...)"
     );
+    notifySlack({
+      title: "MongoDB desconectado",
+      level: "warn",
+      message: "La base de datos se desconectó. El API sigue vivo y reintentará.",
+    });
     void scheduleReconnect();
   });
 
   mongoose.connection.on("error", (err) => {
     console.error("❌ [Database]: Error de conexión:", err.message);
+    notifySlack({
+      title: "Error de conexión a MongoDB",
+      level: "error",
+      message: err.message,
+    });
   });
 }
 
@@ -106,10 +127,16 @@ export const connectDatabase = async (): Promise<void> => {
     const safeUri = MONGO_URI.replace(/\/\/([^@/]+)@/, "//***@");
     console.log(`🔗 [Database]: URI = ${safeUri}`);
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error(
       "❌ [Database]: No se pudo conectar aún. El API permanece activo y reintentará.",
-      error instanceof Error ? error.message : error
+      message
     );
+    notifySlack({
+      title: "MongoDB no disponible al arrancar",
+      level: "error",
+      message,
+    });
     void scheduleReconnect();
   }
 };
